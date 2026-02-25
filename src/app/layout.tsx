@@ -10,6 +10,8 @@ import './globals.css'
 
 import { ClerkProvider } from '@clerk/nextjs'
 import { HeaderNav } from '@/components/headerNav'
+import { Toaster } from '@/components/ui/sonner'
+import { EnsureClerkUser } from '@/components/ensureClerkUser'
 
 const notoSerif = Noto_Serif({
 	variable: '--font-noto-serif',
@@ -55,7 +57,10 @@ export default function RootLayout({
 				<body
 					className={`${notoSans.variable} ${notoSansSC.variable} ${notoSerif.variable} ${notoSerifSC.variable} ${funnelDisplay.variable} antialiased`}
 				>
-					<HeaderNav />{children}
+					<EnsureClerkUser />
+					<HeaderNav />
+					{children}
+					<Toaster duration={3} />
 				</body>
 			</html>
 		</ClerkProvider>

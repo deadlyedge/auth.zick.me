@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.4.1",
   "engineVersion": "55ae170b1ced7fc6ed07a15f110549408c501bb3",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id        String  @id @default(cuid())\n  email     String  @unique\n  clerkId   String\n  name      String?\n  avatarUrl String?\n\n  // 你自定义的字段，可供各应用使用\n  role     UserRole @default(USER)\n  timezone String? // 给 blog/draw 自定义用\n  metadata Json?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nenum UserRole {\n  USER\n  ADMIN\n  OWNER\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id        String  @id @default(cuid())\n  email     String  @unique\n  clerkId   String\n  name      String?\n  avatarUrl String?\n\n  // 你自定义的字段，可供各应用使用\n  role     UserRole @default(USER)\n  timezone String? // 给 blog/draw 自定义用\n  metadata Json?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  // userMeta  UserMeta?\n}\n\nenum UserRole {\n  USER\n  ADMIN\n  SITE_OWNER\n}\n\n// model UserMeta {\n//   id        String @id @default(cuid())\n//   userId    String @unique\n//   metaKey   String\n//   metaValue String\n\n//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n//   createdAt DateTime @default(now())\n//   updatedAt DateTime @updatedAt\n// }\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},

@@ -15,12 +15,13 @@ model User {
   avatarUrl String?
 
   // 你自定义的字段，可供各应用使用
-  role     UserRole  @default(USER)
+  role     UserRole @default(USER)
   timezone String? // 给 blog/draw 自定义用
-  userMeta UserMeta?
+  metadata Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // userMeta  UserMeta?
 }
 
 enum UserRole {
@@ -29,14 +30,14 @@ enum UserRole {
   SITE_OWNER
 }
 
-model UserMeta {
-  id        String @id @default(cuid())
-  userId    String @unique
-  metaKey   String
-  metaValue String
+// model UserMeta {
+//   id        String @id @default(cuid())
+//   userId    String @unique
+//   metaKey   String
+//   metaValue String
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
