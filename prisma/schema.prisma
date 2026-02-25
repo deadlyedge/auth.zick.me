@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  clerkId   String
+  name      String?
+  avatarUrl String?
+
+  // 你自定义的字段，可供各应用使用
+  role     UserRole  @default(USER)
+  timezone String? // 给 blog/draw 自定义用
+  userMeta UserMeta?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SITE_OWNER
+}
+
+model UserMeta {
+  id        String @id @default(cuid())
+  userId    String @unique
+  metaKey   String
+  metaValue String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
