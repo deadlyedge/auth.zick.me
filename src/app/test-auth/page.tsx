@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface ApiResponse {
 	error?: string
+	code?: string
+	message?: string
 	id?: string
 	email?: string
 	name?: string
@@ -13,14 +16,18 @@ interface ApiResponse {
 }
 
 export default function TestAuthPage() {
+	const pathname = usePathname()
 	const [loading, setLoading] = useState(false)
 	const [result, setResult] = useState<ApiResponse | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [isLocalDev, setIsLocalDev] = useState(false)
+	const [showSignIn, setShowSignIn] = useState(false)
 
 	// 检测是否在本地开发环境
 	useEffect(() => {
-		const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+		const isLocal =
+			window.location.hostname === 'localhost' ||
+			window.location.hostname === '127.0.0.1'
 		setIsLocalDev(isLocal)
 	}, [])
 
@@ -29,10 +36,13 @@ export default function TestAuthPage() {
 		setLoading(true)
 		setError(null)
 		setResult(null)
+		setShowSignIn(false)
 
 		try {
 			// 本地开发环境使用相对路径，生产环境使用绝对路径
-			const apiUrl = isLocalDev ? '/api/v1' : 'https://auth.zick.me/api/v1'
+			const apiUrl = isLocalDev
+				? '/api/v1'
+				: 'https://auth.zick.me/api/v1'
 
 			const response = await fetch(apiUrl, {
 				credentials: 'include', // 关键：携带认证 Cookie
@@ -42,6 +52,14 @@ export default function TestAuthPage() {
 
 			if (response.ok) {
 				setResult(data)
+			} else if (response.status === 401) {
+				// 未认证，根据 code 决定是否跳转登录
+				if (data.code === 'REDIRECT_TO_SIGNIN') {
+					setShowSignIn(true)
+					setError(data.message || '请先登录')
+				} else {
+					setError(data.error || '认证失败')
+				}
 			} else {
 				setError(data.error || '认证失败')
 			}
@@ -64,7 +82,91 @@ export default function TestAuthPage() {
 		testRemoteAuth()
 	}
 
+	// 跳转到登录页（模拟外部服务重定向）
+	const redirectToSignIn = () => {
+		// 使用 Clerk 的登录 URL，带上返回地址
+		const signInUrl = `/sign-in?redirect_url=${encodeURIComponent(
+			window.location.href,
+		)}`
+		window.location.href = signInUrl
+	}
+
+	// 跳转到注册页
+	const redirectToSignUp = () => {
+		const signUpUrl = `/sign-up?redirect_url=${encodeURIComponent(
+			window.location.href,
+		)}`
+		window.location.href = signUpUrl
+	}
+
 	const baseUrl = 'https://auth.zick.me'
+
+	// 显示登录/注册提示（当 API 返回需要认证时）
+	if (showSignIn) {
+		return (
+			<main className="max-w-4xl mx-auto my-10 space-y-6 p-6">
+				<h1 className="text-3xl font-bold">🔐 远程认证服务测试</h1>
+				<p className="text-muted-foreground">
+					此页面模拟外部服务调用 auth.zick.me 进行身份验证
+				</p>
+
+				{/* 环境信息 */}
+				<div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+					<span className="text-sm font-medium">测试环境：</span>
+					<button
+						type="button"
+						onClick={toggleEnvironment}
+						className="px-3 py-1 text-sm rounded border hover:bg-background transition-colors"
+					>
+						{isLocalDev
+							? '🌐 本地开发 (localhost:3000)'
+							: '🚀 生产环境 (auth.zick.me)'}
+					</button>
+				</div>
+
+				{/* 未认证提示 */}
+				<div className="border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 rounded-lg p-4">
+					<h3 className="font-semibold text-yellow-600">⚠️ 需要登录</h3>
+					<p className="text-sm mt-1">
+						API 返回 401，指示需要登录。外部服务通常会重定向到登录页面。
+					</p>
+					<p className="text-xs mt-2 text-muted-foreground">
+						响应内容：{error}
+					</p>
+				</div>
+
+				{/* 登录/注册按钮 */}
+				<div className="flex gap-4">
+					<button
+						type="button"
+						onClick={redirectToSignIn}
+						className="px-4 py-2 bg-foreground text-background rounded-lg font-medium hover:opacity-90"
+					>
+						🔑 跳转登录
+					</button>
+					<button
+						type="button"
+						onClick={redirectToSignUp}
+						className="px-4 py-2 border border-foreground rounded-lg font-medium hover:bg-foreground/10"
+					>
+						📝 注册新账号
+					</button>
+				</div>
+
+				{/* 测试按钮 */}
+				<div className="flex gap-4">
+					<button
+						type="button"
+						onClick={testRemoteAuth}
+						disabled={loading}
+						className="px-4 py-2 border rounded-lg font-medium hover:bg-muted disabled:opacity-50"
+					>
+						{loading ? '测试中...' : '重新测试'}
+					</button>
+				</div>
+			</main>
+		)
+	}
 
 	return (
 		<main className="max-w-4xl mx-auto my-10 space-y-6 p-6">
@@ -81,10 +183,13 @@ export default function TestAuthPage() {
 					onClick={toggleEnvironment}
 					className="px-3 py-1 text-sm rounded border hover:bg-background transition-colors"
 				>
-					{isLocalDev ? '🌐 本地开发 (localhost:3000)' : '🚀 生产环境 (auth.zick.me)'}
+					{isLocalDev
+						? '🌐 本地开发 (localhost:3000)'
+						: '🚀 生产环境 (auth.zick.me)'}
 				</button>
 				<span className="text-xs text-muted-foreground">
-					当前 API: {isLocalDev ? '/api/v1' : 'https://auth.zick.me/api/v1'}
+					当前 API:{' '}
+					{isLocalDev ? '/api/v1' : 'https://auth.zick.me/api/v1'}
 				</span>
 			</div>
 
@@ -104,19 +209,23 @@ export default function TestAuthPage() {
 			{error && error.includes('CORS') && (
 				<div className="border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 rounded-lg p-4">
 					<h3 className="font-semibold text-yellow-600">⚠️ CORS 错误</h3>
-					<p className="text-sm mt-1">
-						跨域请求被阻止。请确保：
-					</p>
+					<p className="text-sm mt-1">跨域请求被阻止。请确保：</p>
 					<ul className="text-sm mt-2 list-disc list-inside space-y-1">
-						<li>使用本地开发环境测试（点击上方 "本地开发" 按钮）</li>
-						<li>或者在 auth.zick.me 部署后使用生产环境测试</li>
-						<li>如果需要在其他域名调用，需要在 API 路由中配置 CORS</li>
+						<li>
+							使用本地开发环境测试（点击上方 "本地开发" 按钮）
+						</li>
+						<li>
+							或者在 auth.zick.me 部署后使用生产环境测试
+						</li>
+						<li>
+							如果需要在其他域名调用，需要在 API 路由中配置 CORS
+						</li>
 					</ul>
 				</div>
 			)}
 
 			{/* 错误信息 */}
-			{error && !error.includes('CORS') && (
+			{error && !error.includes('CORS') && !showSignIn && (
 				<div className="border border-red-500 bg-red-50 dark:bg-red-950 rounded-lg p-4">
 					<h3 className="font-semibold text-red-600">❌ 错误</h3>
 					<p className="text-sm">{error}</p>
@@ -136,7 +245,9 @@ export default function TestAuthPage() {
 								<span className="font-mono">{result.id}</span>
 							</div>
 							<div className="flex justify-between">
-								<span className="text-muted-foreground">Clerk ID:</span>
+								<span className="text-muted-foreground">
+									Clerk ID:
+								</span>
 								<span className="font-mono">{result.clerkId}</span>
 							</div>
 							<div className="flex justify-between">
@@ -155,7 +266,9 @@ export default function TestAuthPage() {
 								<span className="text-muted-foreground">创建时间:</span>
 								<span className="text-xs">
 									{result.createdAt
-										? new Date(result.createdAt).toLocaleString('zh-CN')
+										? new Date(
+												result.createdAt,
+											).toLocaleString('zh-CN')
 										: '-'}
 								</span>
 							</div>
@@ -171,20 +284,27 @@ export default function TestAuthPage() {
 				</h2>
 
 				<div className="space-y-2">
-					<p className="text-sm font-medium">1. 同源调用（推荐用于 Next.js 服务）：</p>
+					<p className="text-sm font-medium">
+						1. 同源调用（推荐用于 Next.js 服务）：
+					</p>
 					<div className="bg-muted p-4 rounded-lg">
-						<pre className="text-xs overflow-x-auto">{`// 在同一域名或通过 Next.js 代理调用
+						<pre className="text-xs overflow-x-auto">
+							{`// 在同一域名或通过 Next.js 代理调用
 const response = await fetch('/api/v1', {
   credentials: 'include'
 })
-const user = await response.json()`}</pre>
+const user = await response.json()`}
+						</pre>
 					</div>
 				</div>
 
 				<div className="space-y-2">
-					<p className="text-sm font-medium">2. 使用服务端 API 代理：</p>
+					<p className="text-sm font-medium">
+						2. 使用服务端 API 代理：
+					</p>
 					<div className="bg-muted p-4 rounded-lg">
-						<pre className="text-xs overflow-x-auto">{`// 在你的服务中创建 API 代理
+						<pre className="text-xs overflow-x-auto">
+							{`// 在你的服务中创建 API 代理
 // app/api/auth-user/route.ts
 import { NextResponse } from 'next/server'
 
@@ -201,14 +321,18 @@ export async function GET() {
   })
 
   return response
-}`}</pre>
+}`}
+						</pre>
 					</div>
 				</div>
 
 				<div className="space-y-2">
-					<p className="text-sm font-medium">3. 跨域调用（需要 CORS 支持）：</p>
+					<p className="text-sm font-medium">
+						3. 跨域调用（需要 CORS 支持）：
+					</p>
 					<div className="bg-muted p-4 rounded-lg">
-						<pre className="text-xs overflow-x-auto">{`// 跨域调用（需要 auth.zick.me 配置 CORS）
+						<pre className="text-xs overflow-x-auto">
+							{`// 跨域调用（需要 auth.zick.me 配置 CORS）
 const response = await fetch('https://auth.zick.me/api/v1', {
   method: 'GET',
   credentials: 'include', // 携带认证 cookie
@@ -217,7 +341,8 @@ const response = await fetch('https://auth.zick.me/api/v1', {
     'Content-Type': 'application/json',
   }
 })
-const userData = await response.json()`}</pre>
+const userData = await response.json()`}
+						</pre>
 					</div>
 				</div>
 
@@ -225,8 +350,16 @@ const userData = await response.json()`}</pre>
 					<p className="font-medium">💡 建议：</p>
 					<ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
 						<li>开发时使用本地相对路径 `/api/v1`</li>
-						<li>部署到生产环境后，其他服务可通过代理或同域调用</li>
-						<li>确保调用时携带 <code>credentials: 'include'</code> 以传递认证 Cookie</li>
+						<li>
+							部署到生产环境后，其他服务可通过代理或同域调用
+						</li>
+						<li>
+							确保调用时携带 <code>credentials: 'include'</code>{' '}
+							以传递认证 Cookie
+						</li>
+						<li>
+							收到 401 响应时，外部服务应重定向到登录页面
+						</li>
 					</ul>
 				</div>
 			</div>
