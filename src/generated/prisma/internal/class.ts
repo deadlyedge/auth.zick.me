@@ -17,8 +17,8 @@ import type * as Prisma from "./prismaNamespace"
 
 const config: runtime.GetPrismaClientConfig = {
   "previewFeatures": [],
-  "clientVersion": "7.4.1",
-  "engineVersion": "55ae170b1ced7fc6ed07a15f110549408c501bb3",
+  "clientVersion": "7.6.0",
+  "engineVersion": "75cbdc1eb7150937890ad5465d861175c6624711",
   "activeProvider": "postgresql",
   "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id        String  @id @default(cuid())\n  email     String  @unique\n  clerkId   String\n  name      String?\n  avatarUrl String?\n\n  // 你自定义的字段，可供各应用使用\n  role     UserRole @default(USER)\n  timezone String? // 给 blog/draw 自定义用\n  metadata Json?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  // userMeta  UserMeta?\n}\n\nenum UserRole {\n  USER\n  ADMIN\n  SITE_OWNER\n}\n\n// model UserMeta {\n//   id        String @id @default(cuid())\n//   userId    String @unique\n//   metaKey   String\n//   metaValue String\n\n//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n//   createdAt DateTime @default(now())\n//   updatedAt DateTime @updatedAt\n// }\n",
   "runtimeDataModel": {
@@ -67,7 +67,9 @@ export interface PrismaClientConstructor {
    * Type-safe database client for TypeScript
    * @example
    * ```
-   * const prisma = new PrismaClient()
+   * const prisma = new PrismaClient({
+   *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   * })
    * // Fetch zero or more Users
    * const users = await prisma.user.findMany()
    * ```
@@ -89,7 +91,9 @@ export interface PrismaClientConstructor {
  * Type-safe database client for TypeScript
  * @example
  * ```
- * const prisma = new PrismaClient()
+ * const prisma = new PrismaClient({
+ *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+ * })
  * // Fetch zero or more Users
  * const users = await prisma.user.findMany()
  * ```
